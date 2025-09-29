@@ -188,14 +188,11 @@ nav {
   overflow: auto;
 }
 
-.cost-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
 
-.cost-list .card {
-  width: 100%;
+.cost-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
 }
 
 .cost-list .code-card pre {
