@@ -26,21 +26,32 @@
   <main>
     <section class="hero" id="about">
       <div class="container hero-grid">
-        <div>
-          <p class="eyebrow">AWS Architect &amp; Database Administrator</p>
-          <h1>Cloud automation that keeps data secure, compliant, and fast.</h1>
-          <p class="lede">I architect resilient AWS environments, automate operational guardrails, and keep business-critical data platforms running with confidence. Explore live scripts, review recent projects, and grab my resume below.</p>
+        <div class="hero-intro">
+          <p class="eyebrow">Principal AWS Solutions Architect</p>
+          <h1>Building cloud platforms that move revenue, reduce risk, and scale globally.</h1>
+          <p class="lede">Enterprise cloud leader bridging architecture, security, and FinOps to deliver measurable business outcomes. I design global landing zones, automate guardrails, and mentor teams so programs launch faster with confidence.</p>
+          <ul class="list-ticks hero-highlights">
+            <li><strong>Essential Technical Skills:</strong> Deep command of core AWS services across compute, networking, storage, databases, and security patterns anchored in the Well-Architected Framework.</li>
+            <li><strong>Automation &amp; IaC:</strong> DevOps pipelines, CloudFormation/Terraform stacks, and policy-as-code that keep releases repeatable, auditable, and resilient.</li>
+            <li><strong>Cost &amp; Business Impact:</strong> Continuous spend analytics, right-sizing strategies, and governance models that protect margins while accelerating delivery.</li>
+            <li><strong>Leadership &amp; Communication:</strong> Executive storytelling, cross-functional facilitation, and problem solving that translate business ambition into actionable roadmaps.</li>
+          </ul>
+          <p class="note">AWS Certified Solutions Architect – Associate &amp; Professional · Trusted advisor to enterprises, managed service providers, high-growth SaaS, and public sector programs where cloud adoption is accelerating.</p>
           <div class="hero-actions">
             <a class="btn primary" href="#resume">View Resume</a>
             <a class="btn secondary" href="#work">See Code Samples</a>
           </div>
         </div>
+        <div class="hero-photo">
+          <img src="img/IMG_0733.JPG" alt="Portrait of Wale Adebayo" loading="lazy">
+        </div>
         <div class="hero-card">
           <h2>At a glance</h2>
           <ul>
-            <li><strong>Cloud:</strong> AWS infrastructure, S3 governance, automation pipelines</li>
-            <li><strong>Data:</strong> FileMaker, SQL Server, backup &amp; recovery, performance tuning</li>
-            <li><strong>Tooling:</strong> Bash, AWS CLI, jq, curl, Git, CI/CD</li>
+            <li><strong>Architecture:</strong> Multi-account landing zones, resilient data platforms, Well-Architected reviews</li>
+            <li><strong>Security &amp; Networking:</strong> Zero-trust IAM, segmentation, encryption, and compliance automation</li>
+            <li><strong>Automation &amp; FinOps:</strong> IaC, DevOps pipelines, cost governance, and observability guardrails</li>
+            <li><strong>Certifications:</strong> AWS Solutions Architect – Associate &amp; Professional</li>
           </ul>
         </div>
       </div>
@@ -121,6 +132,156 @@ for pair in &quot;${PAIRS[@]}&quot;; do
 done
 </code></pre>
             <a class="inline-link" href="../aws/storage/s3-lifecycle-archive.sh">View full script →</a>
+          </article>
+
+          <article class="card code-card">
+            <header>
+              <h3>CloudFront OAC Bootstrap</h3>
+              <p class="meta">Shell • CloudFront • S3 Hardening</p>
+            </header>
+            <p>Stand up a CloudFront distribution wired to an Origin Access Control so only the edge can read your S3 origin bucket.</p>
+            <pre><code class="language-bash">#!/usr/bin/env bash
+set -euo pipefail
+
+# Create a CloudFront distribution with an Origin Access Control (OAC) for an S3 website/origin bucket.
+# Usage: ./cloudfront-oac-s3.sh [-p profile] [-r region] --bucket &lt;name&gt; [--domain &lt;CNAME&gt;] [--comment &lt;text&gt;]
+
+SCRIPT_DIR=&quot;$(cd &quot;$(dirname &quot;$0&quot;)&quot; &amp;&amp; pwd)&quot;
+if [[ -f &quot;$SCRIPT_DIR/aws-login.sh&quot; ]]; then ROOT_DIR=&quot;$SCRIPT_DIR&quot;; else ROOT_DIR=&quot;$(cd &quot;$SCRIPT_DIR/..&quot; &amp;&amp; pwd)&quot;; fi
+
+PROFILE=&quot;default&quot;; REGION=&quot;us-east-1&quot;; BUCKET=&quot;&quot;; DOMAIN=&quot;&quot;; COMMENT=&quot;S3 via OAC&quot;
+while [[ $# -gt 0 ]]; do
+  case &quot;$1&quot; in
+    -p|--profile) PROFILE=&quot;$2&quot;; shift 2;;
+    -r|--region)  REGION=&quot;$2&quot;; shift 2;;
+    --bucket)     BUCKET=&quot;$2&quot;; shift 2;;
+    --domain)     DOMAIN=&quot;$2&quot;; shift 2;;
+    --comment)    COMMENT=&quot;$2&quot;; shift 2;;
+    -h|--help) echo &quot;Usage: $0 [-p profile] [-r region(us-east-1 for CF API)] --bucket &lt;name&gt; [--domain &lt;CNAME&gt;] [--comment &lt;text&gt;]&quot;; exit 0;;
+    *) echo &quot;Unknown arg: $1&quot; &gt;&amp;2; exit 1;;
+  esac
+done
+
+read -rp &quot;AWS profile [${PROFILE}]: &quot; _p; PROFILE=&quot;${_p:-$PROFILE}&quot;
+read -rp &quot;CloudFront control plane region [${REGION}] (usually us-east-1): &quot; _r; REGION=&quot;${_r:-$REGION}&quot;
+if [[ -z &quot;$BUCKET&quot; ]]; then read -rp &quot;S3 bucket name (origin): &quot; BUCKET; fi
+read -rp &quot;Optional CNAME (blank to skip): &quot; _d; DOMAIN=&quot;${_d:-$DOMAIN}&quot;
+read -rp &quot;Comment [${COMMENT}]: &quot; _c; COMMENT=&quot;${_c:-$COMMENT}&quot;
+
+# CloudFront is global; region is still passed for auth. Use us-east-1 typically.
+source &quot;$ROOT_DIR/aws-login.sh&quot; &quot;$PROFILE&quot; &quot;$REGION&quot;
+
+OAC_ID=$(aws cloudfront create-origin-access-control --origin-access-control-config '{&quot;Name&quot;:&quot;oac-'"$BUCKET"'&quot;,&quot;SigningProtocol&quot;:&quot;sigv4&quot;,&quot;SigningBehavior&quot;:&quot;always&quot;,&quot;OriginAccessControlOriginType&quot;:&quot;s3&quot;}' --query 'OriginAccessControl.Id' --output text)
+
+DIST_CONFIG=$(cat &lt;&lt;JSON
+{
+  &quot;CallerReference&quot;: &quot;$(date +%s)-$BUCKET&quot;,
+  &quot;Comment&quot;: &quot;$COMMENT&quot;,
+  &quot;Enabled&quot;: true,
+  &quot;Origins&quot;: {
+    &quot;Quantity&quot;: 1,
+    &quot;Items&quot;: [
+      {
+        &quot;Id&quot;: &quot;s3-$BUCKET&quot;,
+        &quot;DomainName&quot;: &quot;$BUCKET.s3.amazonaws.com&quot;,
+        &quot;S3OriginConfig&quot;: {&quot;OriginAccessIdentity&quot;: &quot;&quot;},
+
+</code></pre>
+            <a class="inline-link" href="../aws/cdn/cloudfront-oac-s3.sh">View full script →</a>
+          </article>
+
+          <article class="card code-card">
+            <header>
+              <h3>Lambda Deploy ZIP</h3>
+              <p class="meta">Serverless • CI/CD • Runtime Management</p>
+            </header>
+            <p>Build-and-ship helper that updates existing Lambda code or creates a fresh function with sane defaults in minutes.</p>
+            <pre><code class="language-bash">#!/usr/bin/env bash
+set -euo pipefail
+
+# Create or update a Lambda function from a ZIP package.
+# Usage: ./lambda-deploy-zip.sh [-p profile] [-r region] --name &lt;fn&gt; --runtime &lt;rt&gt; --handler &lt;mod.handler&gt; --zip &lt;path&gt; [--role-arn &lt;arn&gt;] [--memory 128] [--timeout 10]
+
+SCRIPT_DIR=&quot;$(cd &quot;$(dirname &quot;$0&quot;)&quot; &amp;&amp; pwd)&quot;
+if [[ -f &quot;$SCRIPT_DIR/aws-login.sh&quot; ]]; then ROOT_DIR=&quot;$SCRIPT_DIR&quot;; else ROOT_DIR=&quot;$(cd &quot;$SCRIPT_DIR/..&quot; &amp;&amp; pwd)&quot;; fi
+
+PROFILE=&quot;default&quot;; REGION=&quot;&quot;; NAME=&quot;&quot;; RUNTIME=&quot;&quot;; HANDLER=&quot;&quot;; ZIP=&quot;&quot;; ROLE_ARN=&quot;&quot;; MEMORY=128; TIMEOUT=10; ARCH=&quot;x86_64&quot;
+while [[ $# -gt 0 ]]; do
+  case &quot;$1&quot; in
+    -p|--profile) PROFILE=&quot;$2&quot;; shift 2;;
+    -r|--region)  REGION=&quot;$2&quot;; shift 2;;
+    --name)       NAME=&quot;$2&quot;; shift 2;;
+    --runtime)    RUNTIME=&quot;$2&quot;; shift 2;;
+    --handler)    HANDLER=&quot;$2&quot;; shift 2;;
+    --zip)        ZIP=&quot;$2&quot;; shift 2;;
+    --role-arn)   ROLE_ARN=&quot;$2&quot;; shift 2;;
+    --memory)     MEMORY=&quot;$2&quot;; shift 2;;
+    --timeout)    TIMEOUT=&quot;$2&quot;; shift 2;;
+    --arch)       ARCH=&quot;$2&quot;; shift 2;;
+    -h|--help) echo &quot;Usage: $0 [-p profile] [-r region] --name &lt;fn&gt; --runtime &lt;rt&gt; --handler &lt;mod.handler&gt; --zip &lt;path&gt; [--role-arn &lt;arn&gt;] [--memory 128] [--timeout 10] [--arch x86_64|arm64]&quot;; exit 0;;
+    *) echo &quot;Unknown arg: $1&quot; &gt;&amp;2; exit 1;;
+  esac
+done
+
+read -rp &quot;AWS profile [${PROFILE}]: &quot; _p; PROFILE=&quot;${_p:-$PROFILE}&quot;
+if [[ -z &quot;$REGION&quot; ]]; then read -rp &quot;AWS region (blank=profile default): &quot; _r; REGION=&quot;${_r:-}&quot;; fi
+if [[ -z &quot;$NAME&quot; ]]; then read -rp &quot;Function name: &quot; NAME; fi
+if [[ -z &quot;$RUNTIME&quot; ]]; then read -rp &quot;Runtime (e.g., python3.11, nodejs20.x): &quot; RUNTIME; fi
+if [[ -z &quot;$HANDLER&quot; ]]; then read -rp &quot;Handler (module.handler): &quot; HANDLER; fi
+if [[ -z &quot;$ZIP&quot; ]]; then read -rp &quot;Path to deployment ZIP: &quot; ZIP; fi
+if [[ -z &quot;$ROLE_ARN&quot; ]]; then read -rp &quot;Execution role ARN (blank to reuse existing): &quot; ROLE_ARN; fi
+
+</code></pre>
+            <a class="inline-link" href="../aws/compute/lambda-deploy-zip.sh">View full script →</a>
+          </article>
+
+          <article class="card code-card">
+            <header>
+              <h3>GuardDuty Multi-Region Enablement</h3>
+              <p class="meta">Security • Threat Detection • Governance</p>
+            </header>
+            <p>One-click enablement of GuardDuty everywhere, keeping findings flowing even when new regions go live.</p>
+            <pre><code class="language-bash">#!/usr/bin/env bash
+set -euo pipefail
+
+# Enable GuardDuty in one or all regions for the current account.
+# Usage: ./guardduty-enable.sh [-p profile] [-r region] [--all-regions]
+
+SCRIPT_DIR=&quot;$(cd &quot;$(dirname &quot;$0&quot;)&quot; &amp;&amp; pwd)&quot;
+if [[ -f &quot;$SCRIPT_DIR/aws-login.sh&quot; ]]; then ROOT_DIR=&quot;$SCRIPT_DIR&quot;; else ROOT_DIR=&quot;$(cd &quot;$SCRIPT_DIR/..&quot; &amp;&amp; pwd)&quot;; fi
+
+PROFILE=&quot;default&quot;; REGION=&quot;&quot;; ALL=false
+while [[ $# -gt 0 ]]; do
+  case &quot;$1&quot; in
+    -p|--profile) PROFILE=&quot;$2&quot;; shift 2;;
+    -r|--region)  REGION=&quot;$2&quot;; shift 2;;
+    --all-regions) ALL=true; shift 1;;
+    -h|--help) echo &quot;Usage: $0 [-p profile] [-r region] [--all-regions]&quot;; exit 0;;
+    *) echo &quot;Unknown arg: $1&quot; &gt;&amp;2; exit 1;;
+  esac
+done
+
+read -rp &quot;AWS profile [${PROFILE}]: &quot; _p; PROFILE=&quot;${_p:-$PROFILE}&quot;
+if ! $ALL &amp;&amp; [[ -z &quot;$REGION&quot; ]]; then read -rp &quot;AWS region (leave blank to enable in all regions instead): &quot; _r; REGION=&quot;${_r:-}&quot;; fi
+if [[ -z &quot;$REGION&quot; ]]; then read -rp &quot;Enable in ALL regions? (y/N): &quot; _a; [[ &quot;${_a:-}&quot; =~ ^[Yy]$ ]] &amp;&amp; ALL=true || true; fi
+
+if $ALL; then
+  # Use a login in any region for auth
+  source &quot;$ROOT_DIR/aws-login.sh&quot; &quot;$PROFILE&quot; &quot;us-east-1&quot;
+  REGIONS=$(aws ec2 describe-regions --all-regions --query 'Regions[].RegionName' --output text)
+  for reg in $REGIONS; do
+    echo &quot;Enabling GuardDuty in $reg...&quot;
+    AWS_REGION=$reg AWS_DEFAULT_REGION=$reg aws guardduty create-detector --enable &gt;/dev/null || true
+  done
+  echo &quot;GuardDuty enabled in all regions.&quot;
+else
+  source &quot;$ROOT_DIR/aws-login.sh&quot; &quot;$PROFILE&quot; &quot;$REGION&quot;
+  aws guardduty create-detector --enable &gt;/dev/null || true
+  echo &quot;GuardDuty enabled in $REGION.&quot;
+fi
+
+</code></pre>
+            <a class="inline-link" href="../aws/security/guardduty-enable.sh">View full script →</a>
           </article>
 
           <article class="card code-card">
@@ -300,7 +461,7 @@ aws ce get-cost-and-usage \
         <div class="contact-actions">
           <a class="btn primary" href="mailto:ade.adebayod@gmail.com">ade.adebayod@gmail.com</a>
           <a class="btn secondary" href="https://www.linkedin.com/in/wale-adebayo-43a75713a/">LinkedIn</a>
-          <a class="btn secondary" href="https://github.com/waleadebayo">GitHub</a>
+          <a class="btn secondary" href="https://github.com/in-credible">GitHub</a>
         </div>
       </div>
     </section>
