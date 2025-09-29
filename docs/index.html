@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wale Adebayo | AWS &amp; Database Administrator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-content">
+      <div class="brand">
+        <span class="brand-mark">WA</span>
+        <span class="brand-text">Wale Adebayo</span>
+      </div>
+      <nav>
+        <a href="#about">About</a>
+        <a href="#skills">Skills</a>
+        <a href="#work">Showcase</a>
+        <a href="#resume">Resume</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="about">
+      <div class="container hero-grid">
+        <div>
+          <p class="eyebrow">AWS Architect &amp; Database Administrator</p>
+          <h1>Cloud automation that keeps data secure, compliant, and fast.</h1>
+          <p class="lede">I architect resilient AWS environments, automate operational guardrails, and keep business-critical data platforms running with confidence. Explore live scripts, review recent projects, and grab my resume below.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#resume">View Resume</a>
+            <a class="btn secondary" href="#work">See Code Samples</a>
+          </div>
+        </div>
+        <div class="hero-card">
+          <h2>At a glance</h2>
+          <ul>
+            <li><strong>Cloud:</strong> AWS infrastructure, S3 governance, automation pipelines</li>
+            <li><strong>Data:</strong> FileMaker, SQL Server, backup &amp; recovery, performance tuning</li>
+            <li><strong>Tooling:</strong> Bash, AWS CLI, jq, curl, Git, CI/CD</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="skills">
+      <div class="container">
+        <h2>Core strengths</h2>
+        <div class="grid three">
+          <article class="card">
+            <h3>Cloud Architecture</h3>
+            <p>Designing secure multi-account AWS environments with cost-aware guardrails, logging, and least-privilege access patterns.</p>
+          </article>
+          <article class="card">
+            <h3>Automation &amp; Scripting</h3>
+            <p>Authoring reusable Bash tooling to stand up infrastructure, enforce lifecycle policies, and simplify day-two operations.</p>
+          </article>
+          <article class="card">
+            <h3>Database Administration</h3>
+            <p>Keeping FileMaker and SQL workloads healthy through monitoring, schema optimization, and automated maintenance tasks.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section highlight" id="work">
+      <div class="container">
+        <div class="section-heading">
+          <h2>Featured automation &amp; DBA work</h2>
+          <p>A glimpse at scripts from the toolkit visitors can browse on GitHub or deploy directly.</p>
+        </div>
+
+        <div class="grid two">
+          <article class="card code-card">
+            <header>
+              <h3>S3 Lifecycle Automation</h3>
+              <p class="meta">Shell • AWS CLI • Cost Optimization</p>
+            </header>
+            <p>Interactive helper that enforces lifecycle transitions and archival policies so S3 storage stays lean without manual clean-up.</p>
+            <pre><code class="language-bash">#!/usr/bin/env bash
+set -euo pipefail
+
+# Add a lifecycle rule to transition/expire objects in an S3 bucket.
+# Usage: ./s3-lifecycle-archive.sh [-p profile] [-r region] --bucket &lt;name&gt; [--id &lt;rule-id&gt;] [--transition STANDARD_IA:30,GLACIER:60] [--expire 365]
+
+SCRIPT_DIR=&quot;$(cd &quot;$(dirname &quot;$0&quot;)&quot; &amp;&amp; pwd)&quot;
+if [[ -f &quot;$SCRIPT_DIR/aws-login.sh&quot; ]]; then ROOT_DIR=&quot;$SCRIPT_DIR&quot;; else ROOT_DIR=&quot;$(cd &quot;$SCRIPT_DIR/..&quot; &amp;&amp; pwd)&quot;; fi
+
+PROFILE=&quot;default&quot;; REGION=&quot;&quot;; BUCKET=&quot;&quot;; RULE_ID=&quot;archive-rule&quot;; TRANSITIONS=&quot;STANDARD_IA:30&quot;; EXPIRE=&quot;&quot;
+while [[ $# -gt 0 ]]; do
+  case &quot;$1&quot; in
+    -p|--profile) PROFILE=&quot;$2&quot;; shift 2;;
+    -r|--region)  REGION=&quot;$2&quot;; shift 2;;
+    --bucket)     BUCKET=&quot;$2&quot;; shift 2;;
+    --id)         RULE_ID=&quot;$2&quot;; shift 2;;
+    --transition) TRANSITIONS=&quot;$2&quot;; shift 2;;
+    --expire)     EXPIRE=&quot;$2&quot;; shift 2;;
+    -h|--help) echo &quot;Usage: $0 [-p profile] [-r region] --bucket &lt;name&gt; [--id &lt;rule-id&gt;] [--transition STANDARD_IA:30,GLACIER:60] [--expire 365]&quot;; exit 0;;
+    *) echo &quot;Unknown arg: $1&quot; &gt;&amp;2; exit 1;;
+  esac
+done
+
+read -rp &quot;AWS profile [${PROFILE}]: &quot; _p; PROFILE=&quot;${_p:-$PROFILE}&quot;
+if [[ -z &quot;$REGION&quot; ]]; then read -rp &quot;AWS region (blank=profile default): &quot; _r; REGION=&quot;${_r:-}&quot;; fi
+if [[ -z &quot;$BUCKET&quot; ]]; then read -rp &quot;Bucket name: &quot; BUCKET; fi
+read -rp &quot;Rule ID [${RULE_ID}]: &quot; _i; RULE_ID=&quot;${_i:-$RULE_ID}&quot;
+read -rp &quot;Transitions (CLASS:DAYS,CLASS:DAYS) [${TRANSITIONS}]: &quot; _t; TRANSITIONS=&quot;${_t:-$TRANSITIONS}&quot;
+read -rp &quot;Expiration days (blank to skip): &quot; _e; EXPIRE=&quot;${_e:-$EXPIRE}&quot;
+
+if [[ -n &quot;$REGION&quot; ]]; then source &quot;$ROOT_DIR/aws-login.sh&quot; &quot;$PROFILE&quot; &quot;$REGION&quot;; else source &quot;$ROOT_DIR/aws-login.sh&quot; &quot;$PROFILE&quot;; fi
+
+# Build transitions JSON array
+IFS=&#x27;,&#x27; read -r -a PAIRS &lt;&lt;&lt; &quot;$TRANSITIONS&quot;
+TRANS_JSON=&quot;[]&quot;
+for pair in &quot;${PAIRS[@]}&quot;; do
+  cls=&quot;${pair%%:*}&quot;; days=&quot;${pair##*:}&quot;
+  TRANS_JSON=$(jq -c --arg c &quot;$cls&quot; --argjson d &quot;$days&quot; &#x27;. + [{&quot;StorageClass&quot;:$c, &quot;TransitionInDays&quot;:$d}]&#x27; &lt;&lt;&lt; &quot;$TRANS_JSON&quot;)
+done
+</code></pre>
+            <a class="inline-link" href="../aws/storage/s3-lifecycle-archive.sh">View full script →</a>
+          </article>
+
+          <article class="card code-card">
+            <header>
+              <h3>CloudFront OAC Bootstrap</h3>
+              <p class="meta">Shell • CloudFront • S3 Hardening</p>
+            </header>
+            <p>Stand up a CloudFront distribution wired to an Origin Access Control so only the edge can read your S3 origin bucket.</p>
+            <pre><code class="language-bash">#!/usr/bin/env bash
+set -euo pipefail
+
+# Create a CloudFront distribution with an Origin Access Control (OAC) for an S3 website/origin bucket.
+# Usage: ./cloudfront-oac-s3.sh [-p profile] [-r region] --bucket &lt;name&gt; [--domain &lt;CNAME&gt;] [--comment &lt;text&gt;]
+
+SCRIPT_DIR=&quot;$(cd &quot;$(dirname &quot;$0&quot;)&quot; &amp;&amp; pwd)&quot;
+if [[ -f &quot;$SCRIPT_DIR/aws-login.sh&quot; ]]; then ROOT_DIR=&quot;$SCRIPT_DIR&quot;; else ROOT_DIR=&quot;$(cd &quot;$SCRIPT_DIR/..&quot; &amp;&amp; pwd)&quot;; fi
+
+PROFILE=&quot;default&quot;; REGION=&quot;us-east-1&quot;; BUCKET=&quot;&quot;; DOMAIN=&quot;&quot;; COMMENT=&quot;S3 via OAC&quot;
+while [[ $# -gt 0 ]]; do
+  case &quot;$1&quot; in
+    -p|--profile) PROFILE=&quot;$2&quot;; shift 2;;
+    -r|--region)  REGION=&quot;$2&quot;; shift 2;;
+    --bucket)     BUCKET=&quot;$2&quot;; shift 2;;
+    --domain)     DOMAIN=&quot;$2&quot;; shift 2;;
+    --comment)    COMMENT=&quot;$2&quot;; shift 2;;
+    -h|--help) echo &quot;Usage: $0 [-p profile] [-r region(us-east-1 for CF API)] --bucket &lt;name&gt; [--domain &lt;CNAME&gt;] [--comment &lt;text&gt;]&quot;; exit 0;;
+    *) echo &quot;Unknown arg: $1&quot; &gt;&amp;2; exit 1;;
+  esac
+done
+
+read -rp &quot;AWS profile [${PROFILE}]: &quot; _p; PROFILE=&quot;${_p:-$PROFILE}&quot;
+read -rp &quot;CloudFront control plane region [${REGION}] (usually us-east-1): &quot; _r; REGION=&quot;${_r:-$REGION}&quot;
+if [[ -z &quot;$BUCKET&quot; ]]; then read -rp &quot;S3 bucket name (origin): &quot; BUCKET; fi
+read -rp &quot;Optional CNAME (blank to skip): &quot; _d; DOMAIN=&quot;${_d:-$DOMAIN}&quot;
+read -rp &quot;Comment [${COMMENT}]: &quot; _c; COMMENT=&quot;${_c:-$COMMENT}&quot;
+
+# CloudFront is global; region is still passed for auth. Use us-east-1 typically.
+source &quot;$ROOT_DIR/aws-login.sh&quot; &quot;$PROFILE&quot; &quot;$REGION&quot;
+
+OAC_ID=$(aws cloudfront create-origin-access-control --origin-access-control-config '{&quot;Name&quot;:&quot;oac-'"$BUCKET"'&quot;,&quot;SigningProtocol&quot;:&quot;sigv4&quot;,&quot;SigningBehavior&quot;:&quot;always&quot;,&quot;OriginAccessControlOriginType&quot;:&quot;s3&quot;}' --query 'OriginAccessControl.Id' --output text)
+
+DIST_CONFIG=$(cat &lt;&lt;JSON
+{
+  &quot;CallerReference&quot;: &quot;$(date +%s)-$BUCKET&quot;,
+  &quot;Comment&quot;: &quot;$COMMENT&quot;,
+  &quot;Enabled&quot;: true,
+  &quot;Origins&quot;: {
+    &quot;Quantity&quot;: 1,
+    &quot;Items&quot;: [
+      {
+        &quot;Id&quot;: &quot;s3-$BUCKET&quot;,
+        &quot;DomainName&quot;: &quot;$BUCKET.s3.amazonaws.com&quot;,
+        &quot;S3OriginConfig&quot;: {&quot;OriginAccessIdentity&quot;: &quot;&quot;},
+
+</code></pre>
+            <a class="inline-link" href="../aws/cdn/cloudfront-oac-s3.sh">View full script →</a>
+          </article>
+
+          <article class="card code-card">
+            <header>
+              <h3>Lambda Deploy ZIP</h3>
+              <p class="meta">Serverless • CI/CD • Runtime Management</p>
+            </header>
+            <p>Build-and-ship helper that updates existing Lambda code or creates a fresh function with sane defaults in minutes.</p>
+            <pre><code class="language-bash">#!/usr/bin/env bash
+set -euo pipefail
+
+# Create or update a Lambda function from a ZIP package.
+# Usage: ./lambda-deploy-zip.sh [-p profile] [-r region] --name &lt;fn&gt; --runtime &lt;rt&gt; --handler &lt;mod.handler&gt; --zip &lt;path&gt; [--role-arn &lt;arn&gt;] [--memory 128] [--timeout 10]
+
+SCRIPT_DIR=&quot;$(cd &quot;$(dirname &quot;$0&quot;)&quot; &amp;&amp; pwd)&quot;
+if [[ -f &quot;$SCRIPT_DIR/aws-login.sh&quot; ]]; then ROOT_DIR=&quot;$SCRIPT_DIR&quot;; else ROOT_DIR=&quot;$(cd &quot;$SCRIPT_DIR/..&quot; &amp;&amp; pwd)&quot;; fi
+
+PROFILE=&quot;default&quot;; REGION=&quot;&quot;; NAME=&quot;&quot;; RUNTIME=&quot;&quot;; HANDLER=&quot;&quot;; ZIP=&quot;&quot;; ROLE_ARN=&quot;&quot;; MEMORY=128; TIMEOUT=10; ARCH=&quot;x86_64&quot;
+while [[ $# -gt 0 ]]; do
+  case &quot;$1&quot; in
+    -p|--profile) PROFILE=&quot;$2&quot;; shift 2;;
+    -r|--region)  REGION=&quot;$2&quot;; shift 2;;
+    --name)       NAME=&quot;$2&quot;; shift 2;;
+    --runtime)    RUNTIME=&quot;$2&quot;; shift 2;;
+    --handler)    HANDLER=&quot;$2&quot;; shift 2;;
+    --zip)        ZIP=&quot;$2&quot;; shift 2;;
+    --role-arn)   ROLE_ARN=&quot;$2&quot;; shift 2;;
+    --memory)     MEMORY=&quot;$2&quot;; shift 2;;
+    --timeout)    TIMEOUT=&quot;$2&quot;; shift 2;;
+    --arch)       ARCH=&quot;$2&quot;; shift 2;;
+    -h|--help) echo &quot;Usage: $0 [-p profile] [-r region] --name &lt;fn&gt; --runtime &lt;rt&gt; --handler &lt;mod.handler&gt; --zip &lt;path&gt; [--role-arn &lt;arn&gt;] [--memory 128] [--timeout 10] [--arch x86_64|arm64]&quot;; exit 0;;
+    *) echo &quot;Unknown arg: $1&quot; &gt;&amp;2; exit 1;;
+  esac
+done
+
+read -rp &quot;AWS profile [${PROFILE}]: &quot; _p; PROFILE=&quot;${_p:-$PROFILE}&quot;
+if [[ -z &quot;$REGION&quot; ]]; then read -rp &quot;AWS region (blank=profile default): &quot; _r; REGION=&quot;${_r:-}&quot;; fi
+if [[ -z &quot;$NAME&quot; ]]; then read -rp &quot;Function name: &quot; NAME; fi
+if [[ -z &quot;$RUNTIME&quot; ]]; then read -rp &quot;Runtime (e.g., python3.11, nodejs20.x): &quot; RUNTIME; fi
+if [[ -z &quot;$HANDLER&quot; ]]; then read -rp &quot;Handler (module.handler): &quot; HANDLER; fi
+if [[ -z &quot;$ZIP&quot; ]]; then read -rp &quot;Path to deployment ZIP: &quot; ZIP; fi
+if [[ -z &quot;$ROLE_ARN&quot; ]]; then read -rp &quot;Execution role ARN (blank to reuse existing): &quot; ROLE_ARN; fi
+
+</code></pre>
+            <a class="inline-link" href="../aws/compute/lambda-deploy-zip.sh">View full script →</a>
+          </article>
+
+          <article class="card code-card">
+            <header>
+              <h3>GuardDuty Multi-Region Enablement</h3>
+              <p class="meta">Security • Threat Detection • Governance</p>
+            </header>
+            <p>One-click enablement of GuardDuty everywhere, keeping findings flowing even when new regions go live.</p>
+            <pre><code class="language-bash">#!/usr/bin/env bash
+set -euo pipefail
+
+# Enable GuardDuty in one or all regions for the current account.
+# Usage: ./guardduty-enable.sh [-p profile] [-r region] [--all-regions]
+
+SCRIPT_DIR=&quot;$(cd &quot;$(dirname &quot;$0&quot;)&quot; &amp;&amp; pwd)&quot;
+if [[ -f &quot;$SCRIPT_DIR/aws-login.sh&quot; ]]; then ROOT_DIR=&quot;$SCRIPT_DIR&quot;; else ROOT_DIR=&quot;$(cd &quot;$SCRIPT_DIR/..&quot; &amp;&amp; pwd)&quot;; fi
+
+PROFILE=&quot;default&quot;; REGION=&quot;&quot;; ALL=false
+while [[ $# -gt 0 ]]; do
+  case &quot;$1&quot; in
+    -p|--profile) PROFILE=&quot;$2&quot;; shift 2;;
+    -r|--region)  REGION=&quot;$2&quot;; shift 2;;
+    --all-regions) ALL=true; shift 1;;
+    -h|--help) echo &quot;Usage: $0 [-p profile] [-r region] [--all-regions]&quot;; exit 0;;
+    *) echo &quot;Unknown arg: $1&quot; &gt;&amp;2; exit 1;;
+  esac
+done
+
+read -rp &quot;AWS profile [${PROFILE}]: &quot; _p; PROFILE=&quot;${_p:-$PROFILE}&quot;
+if ! $ALL &amp;&amp; [[ -z &quot;$REGION&quot; ]]; then read -rp &quot;AWS region (leave blank to enable in all regions instead): &quot; _r; REGION=&quot;${_r:-}&quot;; fi
+if [[ -z &quot;$REGION&quot; ]]; then read -rp &quot;Enable in ALL regions? (y/N): &quot; _a; [[ &quot;${_a:-}&quot; =~ ^[Yy]$ ]] &amp;&amp; ALL=true || true; fi
+
+if $ALL; then
+  # Use a login in any region for auth
+  source &quot;$ROOT_DIR/aws-login.sh&quot; &quot;$PROFILE&quot; &quot;us-east-1&quot;
+  REGIONS=$(aws ec2 describe-regions --all-regions --query 'Regions[].RegionName' --output text)
+  for reg in $REGIONS; do
+    echo &quot;Enabling GuardDuty in $reg...&quot;
+    AWS_REGION=$reg AWS_DEFAULT_REGION=$reg aws guardduty create-detector --enable &gt;/dev/null || true
+  done
+  echo &quot;GuardDuty enabled in all regions.&quot;
+else
+  source &quot;$ROOT_DIR/aws-login.sh&quot; &quot;$PROFILE&quot; &quot;$REGION&quot;
+  aws guardduty create-detector --enable &gt;/dev/null || true
+  echo &quot;GuardDuty enabled in $REGION.&quot;
+fi
+
+</code></pre>
+            <a class="inline-link" href="../aws/security/guardduty-enable.sh">View full script →</a>
+          </article>
+
+          <article class="card code-card">
+            <header>
+              <h3>FileMaker Data API CLI</h3>
+              <p class="meta">Shell • FileMaker • Token Management</p>
+            </header>
+            <p>Reusable CLI to authenticate, list layouts, and run CRUD operations with token caching and auto re-authentication on 401s.</p>
+            <pre><code class="language-bash">#!/usr/bin/env bash
+set -euo pipefail
+
+# FileMaker Data API CLI helper
+# Commands: login, status, layouts, list, find, create, update, delete, logout
+
+SCRIPT_DIR=&quot;$(cd &quot;$(dirname &quot;$0&quot;)&quot; &amp;&amp; pwd)&quot;
+SESS_DIR=&quot;$SCRIPT_DIR/.sessions&quot;
+mkdir -p &quot;$SESS_DIR&quot;
+
+# Load .env if present
+if [[ -f &quot;$SCRIPT_DIR/.env&quot; ]]; then
+  # shellcheck disable=SC1091
+  source &quot;$SCRIPT_DIR/.env&quot;
+fi
+
+FM_HOST=${FM_HOST:-}
+FM_DB=${FM_DB:-}
+FM_USER=${FM_USER:-}
+FM_PASS=${FM_PASS:-}
+FM_LAYOUT=${FM_LAYOUT:-}
+FM_INSECURE=${FM_INSECURE:-0}
+
+LAYOUT_OVERRIDE=&quot;&quot;
+INSECURE_FLAG=&quot;&quot;
+
+die() { echo &quot;Error: $*&quot; &gt;&amp;2; exit 1; }
+
+require_cmd() { command -v &quot;$1&quot; &gt;/dev/null 2&gt;&amp;1 || die &quot;$1 is required&quot;; }
+require_cmd curl; require_cmd jq
+
+usage() {
+  cat &lt;&lt;USAGE
+Usage: $0 [global options] &lt;command&gt; [args]
+
+Global options:
+  -H, --host &lt;host&gt;       FileMaker Server host
+  -d, --db &lt;name&gt;         Database name
+  -u, --user &lt;name&gt;       Username
+  -p, --pass &lt;pass&gt;       Password
+  -l, --layout &lt;name&gt;     Layout name (default: FM_LAYOUT)
+      --insecure          Allow self-signed TLS (curl -k)
+
+Commands:
+  login                   Obtain and cache a token
+  status                  Validate token and show user info
+  layouts                 List layouts
+  list [--limit N] [--offset N]
+  find [key=value ...] [--query-file file.json]
+  create key=value [...]
+  update &lt;recordId&gt; key=value [...]
+  delete &lt;recordId&gt;
+  logout                  Revoke and remove cached token
+USAGE
+}
+
+# Parse global flags
+ARGS=()
+while [[ $# -gt 0 ]]; do
+  case &quot;$1&quot; in</code></pre>
+            <a class="inline-link" href="../fm/fm.sh">View full script →</a>
+          </article>
+        </div>
+
+        <div class="grid two">
+          <article class="card code-card">
+            <header>
+              <h3>AWS Cost Explorer Snapshot</h3>
+              <p class="meta">FinOps • Reporting • Governance</p>
+            </header>
+            <p>Generates on-demand service-level cost reports so stakeholders can respond to spend anomalies in hours, not weeks.</p>
+            <pre><code class="language-bash">#!/usr/bin/env bash
+set -euo pipefail
+
+# Quick AWS Cost Explorer report by service.
+# Usage: ./cost-explorer-report.sh [-p profile] [-r region] [--granularity DAILY|MONTHLY] [--start YYYY-MM-DD] [--end YYYY-MM-DD]
+
+SCRIPT_DIR=&quot;$(cd &quot;$(dirname &quot;$0&quot;)&quot; &amp;&amp; pwd)&quot;
+if [[ -f &quot;$SCRIPT_DIR/aws-login.sh&quot; ]]; then ROOT_DIR=&quot;$SCRIPT_DIR&quot;; else ROOT_DIR=&quot;$(cd &quot;$SCRIPT_DIR/..&quot; &amp;&amp; pwd)&quot;; fi
+
+PROFILE=&quot;default&quot;; REGION=&quot;us-east-1&quot;; GRAN=&quot;MONTHLY&quot;; START=&quot;&quot;; END=&quot;&quot;
+while [[ $# -gt 0 ]]; do
+  case &quot;$1&quot; in
+    -p|--profile) PROFILE=&quot;$2&quot;; shift 2;;
+    -r|--region)  REGION=&quot;$2&quot;; shift 2;;
+    --granularity) GRAN=&quot;$2&quot;; shift 2;;
+    --start)      START=&quot;$2&quot;; shift 2;;
+    --end)        END=&quot;$2&quot;; shift 2;;
+    -h|--help) echo &quot;Usage: $0 [-p profile] [-r region] [--granularity DAILY|MONTHLY] [--start YYYY-MM-DD] [--end YYYY-MM-DD]&quot;; exit 0;;
+    *) echo &quot;Unknown arg: $1&quot; &gt;&amp;2; exit 1;;
+  esac
+done
+
+read -rp &quot;AWS profile [${PROFILE}]: &quot; _p; PROFILE=&quot;${_p:-$PROFILE}&quot;
+read -rp &quot;Cost Explorer API region [${REGION}]: &quot; _r; REGION=&quot;${_r:-$REGION}&quot;
+read -rp &quot;Granularity [${GRAN}] (DAILY/MONTHLY): &quot; _g; GRAN=&quot;${_g:-$GRAN}&quot;
+if [[ -z &quot;$START&quot; || -z &quot;$END&quot; ]]; then
+  read -rp &quot;Start date (YYYY-MM-DD) [30 days ago]: &quot; _s; START=&quot;${_s:-$(date -v-30d +%F 2&gt;/dev/null || date -d &#x27;30 days ago&#x27; +%F)}&quot;
+  read -rp &quot;End date (YYYY-MM-DD) [today]: &quot; _e; END=&quot;${_e:-$(date +%F)}&quot;
+fi
+
+source &quot;$ROOT_DIR/aws-login.sh&quot; &quot;$PROFILE&quot; &quot;$REGION&quot;
+
+aws ce get-cost-and-usage \
+  --time-period Start=&quot;$START&quot;,End=&quot;$END&quot; \
+  --granularity &quot;$GRAN&quot; \
+  --metrics UnblendedCost \
+  --group-by Type=DIMENSION,Key=SERVICE \
+  --query &#x27;ResultsByTime[].Groups[].{Service:Keys[0],Cost:Metrics.UnblendedCost.Amount}&#x27; \
+  --output table</code></pre>
+            <a class="inline-link" href="../aws/ops/cost-explorer-report.sh">View full script →</a>
+          </article>
+          <article class="card">
+            <header>
+              <h3>Recent highlights</h3>
+            </header>
+            <ul class="list-ticks">
+              <li>Migrated legacy document storage to S3 with automated archival tiers and immutability controls.</li>
+              <li>Implemented FileMaker data export routines to sync reporting data into analytics lakehouse pipelines.</li>
+              <li>Reduced monthly cloud spend 18% by right-sizing compute and enabling request-driven S3 requester pays flows.</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="resume">
+      <div class="container">
+        <div class="section-heading">
+          <h2>Resume</h2>
+          <p>Download the PDF below or skim the highlights. Update the details to match your latest experience.</p>
+        </div>
+
+        <div class="grid two">
+          <div>
+            <h3>Professional Experience</h3>
+            <ul class="timeline">
+              <li>
+                <h4>AWS Cloud &amp; Database Administrator</h4>
+                <p class="meta">2019 – Present · Various Clients</p>
+                <p>Own end-to-end AWS infrastructure and enterprise database stacks, delivering automation-first operations, airtight compliance, and measurable cost savings.</p>
+              </li>
+              <li>
+                <h4>Systems Engineer</h4>
+                <p class="meta">2015 – 2019 · Managed Services</p>
+                <p>Maintained hybrid cloud environments, led DR testing, and modernized backup strategies for regulated industries.</p>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3>Certifications &amp; Education</h3>
+            <ul class="list-ticks">
+              <li>AWS Certified Solutions Architect – Associate</li>
+              <li>AWS Certified SysOps Administrator – Associate</li>
+              <li>FileMaker Certified Developer</li>
+              <li>B.Sc. Information Technology</li>
+            </ul>
+            <a class="btn primary full-width" href="resume.pdf">Download Resume (PDF)</a>
+            <p class="note">Replace <code>resume.pdf</code> with your latest resume file in the <code>site/</code> directory.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section accent" id="contact">
+      <div class="container contact-card">
+        <h2>Let’s collaborate</h2>
+        <p>Ready to modernize your data platform or tighten AWS governance? Reach out and let’s build a plan.</p>
+        <div class="contact-actions">
+          <a class="btn primary" href="mailto:ade.adebayod@gmail.com">ade.adebayod@gmail.com</a>
+          <a class="btn secondary" href="https://www.linkedin.com/in/wale-adebayo-43a75713a/">LinkedIn</a>
+          <a class="btn secondary" href="https://github.com/waleadebayo">GitHub</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>© <span id="year"></span> Wale Adebayo · Crafted with shell scripts, automation, and a love for data.</p>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
