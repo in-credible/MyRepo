@@ -188,6 +188,22 @@ nav {
   overflow: auto;
 }
 
+.cost-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.cost-list .card {
+  width: 100%;
+}
+
+.cost-list .code-card pre {
+  max-height: 220px;
+  overflow: auto;
+  font-size: 0.8rem;
+}
+
 .skills-grid {
   display: flex;
   flex-wrap: wrap;
