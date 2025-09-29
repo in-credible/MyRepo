@@ -167,13 +167,14 @@ nav {
 }
 
 .work-list {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 2rem;
 }
 
 .work-list .code-card {
   padding: 2rem 2.5rem;
+  width: 100%;
 }
 
 .work-list .code-card header {
