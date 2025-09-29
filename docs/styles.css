@@ -191,8 +191,11 @@ nav {
 
 .cost-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 2rem;
+}
+
+.cost-list .code-card {
+  padding: 2rem 2.5rem;
 }
 
 .cost-list .code-card pre {
