@@ -173,7 +173,7 @@ nav {
 }
 
 .work-list .code-card {
-  padding: 2.5rem 3rem;
+  padding: 2rem 2.5rem;
 }
 
 .work-list .code-card header {
@@ -182,8 +182,9 @@ nav {
 
 .work-list .code-card pre {
   margin-top: 1.5rem;
-  font-size: 0.85rem;
-  overflow-x: auto;
+  font-size: 0.8rem;
+  max-height: 220px;
+  overflow: auto;
 }
 
 .skills-grid {
