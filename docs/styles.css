@@ -166,6 +166,23 @@ nav {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
+.work-list {
+  display: grid;
+  gap: 2rem;
+}
+
+.work-list .code-card {
+  padding: 2.5rem;
+}
+
+.work-list .code-card header {
+  margin-bottom: 1.5rem;
+}
+
+.work-list .code-card pre {
+  margin-top: 1.5rem;
+}
+
 .skills-grid {
   display: flex;
   flex-wrap: wrap;
